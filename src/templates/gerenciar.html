@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Chamados - Gestor de Chamados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .status-verde {
+            background-color: rgba(0, 128, 0, 0.1);
+            border-left: 4px solid green;
+        }
+        .status-amarelo {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+        }
+        .status-vermelho {
+            background-color: rgba(255, 0, 0, 0.1);
+            border-left: 4px solid red;
+        }
+        .status-azul {
+            background-color: rgba(0, 0, 255, 0.1);
+            border-left: 4px solid blue;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Gestor de Chamados</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chamados.registro') }}">Registrar Chamado</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chamados.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('chamados.gerenciar') }}">Gerenciar Chamados</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Gerenciar Chamados</h2>
+            <a href="{{ url_for('chamados.registro') }}" class="btn btn-primary">Novo Chamado</a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control" placeholder="Buscar chamados...">
+                            <button class="btn btn-outline-secondary" type="button" id="search-button">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="filter-select" class="form-select">
+                            <option value="todos">Todos os chamados</option>
+                            <option value="aberto">Chamados abertos</option>
+                            <option value="fechado">Chamados fechados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Número</th>
+                        <th>Empresa</th>
+                        <th>Responsável</th>
+                        <th>Data Inclusão</th>
+                        <th>Data Agendamento</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="chamados-table-body">
+                    <!-- Os chamados serão inseridos aqui via JavaScript -->
+                    <tr>
+                        <td colspan="7" class="text-center py-4" id="loading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2">Carregando chamados...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="no-results" class="alert alert-info text-center d-none">
+            Nenhum chamado encontrado.
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Editar Chamado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-form">
+                        <input type="hidden" id="edit-id">
+                        <div class="mb-3">
+                            <label for="edit-numero" class="form-label">Número do Chamado</label>
+                            <input type="text" class="form-control" id="edit-numero" required>
+                            <small class="text-muted">Identificador único do chamado.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-responsavel" class="form-label">Responsável</label>
+                            <input type="text" class="form-control" id="edit-responsavel" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-empresa" class="form-label">Empresa</label>
+                            <input type="text" class="form-control" id="edit-empresa" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="edit-descricao" rows="4" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-data-inclusao" class="form-label">Data de Inclusão</label>
+                            <input type="date" class="form-control" id="edit-data-inclusao" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-data-agendamento" class="form-label">Data de Agendamento</label>
+                            <input type="date" class="form-control" id="edit-data-agendamento" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-estado" id="edit-estado-aberto" value="aberto">
+                                <label class="form-check-label" for="edit-estado-aberto">
+                                    Aberto
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-estado" id="edit-estado-fechado" value="fechado">
+                                <label class="form-check-label" for="edit-estado-fechado">
+                                    Fechado
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-button">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variáveis globais
+        let todosChamados = [];
+        let editModal;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar modal
+            editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            
+            // Carregar chamados ao iniciar a página
+            carregarChamados();
+            
+            // Configurar eventos
+            document.getElementById('search-button').addEventListener('click', filtrarChamados);
+            document.getElementById('search-input').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    filtrarChamados();
+                }
+            });
+            
+            document.getElementById('filter-select').addEventListener('change', filtrarChamados);
+            
+            document.getElementById('save-edit-button').addEventListener('click', salvarEdicao);
+        });
+
+        // Função para carregar chamados da API
+        function carregarChamados() {
+            const tableBody = document.getElementById('chamados-table-body');
+            const loading = document.getElementById('loading');
+            const noResults = document.getElementById('no-results');
+            
+            // Mostrar loading
+            if (loading) {
+                loading.parentElement.classList.remove('d-none');
+            }
+            noResults.classList.add('d-none');
+            
+            fetch('/chamados/api/chamados')
+                .then(response => response.json())
+                .then(chamados => {
+                    // Armazenar chamados globalmente
+                    todosChamados = chamados;
+                    
+                    // Renderizar chamados
+                    renderizarChamados(chamados);
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar chamados:', error);
+                    if (loading) {
+                        loading.parentElement.classList.add('d-none');
+                    }
+                    alert('Erro ao carregar chamados. Tente novamente.');
+                });
+        }
+
+        // Função para renderizar chamados na tabela
+        function renderizarChamados(chamados) {
+            const tableBody = document.getElementById('chamados-table-body');
+            const noResults = document.getElementById('no-results');
+            
+            // Limpar tabela
+            tableBody.innerHTML = '';
+            
+            if (chamados.length === 0) {
+                noResults.classList.remove('d-none');
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-3">Nenhum chamado encontrado.</td></tr>';
+                return;
+            } else {
+                noResults.classList.add('d-none');
+            }
+            
+            // Data atual para comparação
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            
+            chamados.forEach(chamado => {
+                // Determinar status e cor
+                let statusClass = '';
+                let statusText = '';
+                
+                if (chamado.estado === 'fechado') {
+                    statusClass = 'status-azul';
+                    statusText = 'Resolvido';
+                } else {
+                    const dataAgendamento = new Date(chamado.data_agendamento);
+                    dataAgendamento.setHours(0, 0, 0, 0);
+                    
+                    if (dataAgendamento.getTime() === hoje.getTime()) {
+                        statusClass = 'status-amarelo';
+                        statusText = 'Vence hoje';
+                    } else if (dataAgendamento < hoje) {
+                        statusClass = 'status-vermelho';
+                        statusText = 'Atrasado';
+                    } else {
+                        statusClass = 'status-verde';
+                        statusText = 'A vencer';
+                    }
+                }
+                
+                // Criar linha da tabela
+                const tr = document.createElement('tr');
+                tr.className = statusClass;
+                
+                tr.innerHTML = `
+                    <td>${chamado.numero}</td>
+                    <td>${chamado.empresa}</td>
+                    <td>${chamado.responsavel}</td>
+                    <td>${formatarData(chamado.data_inclusao)}</td>
+                    <td>${formatarData(chamado.data_agendamento)}</td>
+                    <td>
+                        <span class="badge ${getBadgeClass(statusClass)}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editarChamado(${chamado.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirChamado(${chamado.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Função para filtrar chamados
+        function filtrarChamados() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filterValue = document.getElementById('filter-select').value;
+            
+            let chamadosFiltrados = [...todosChamados];
+            
+            // Aplicar filtro de estado
+            if (filterValue !== 'todos') {
+                chamadosFiltrados = chamadosFiltrados.filter(chamado => 
+                    chamado.estado === filterValue
+                );
+            }
+            
+            // Aplicar filtro de busca
+            if (searchTerm) {
+                chamadosFiltrados = chamadosFiltrados.filter(chamado => 
+                    chamado.numero.toLowerCase().includes(searchTerm) ||
+                    chamado.responsavel.toLowerCase().includes(searchTerm) ||
+                    chamado.empresa.toLowerCase().includes(searchTerm) ||
+                    chamado.descricao.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            renderizarChamados(chamadosFiltrados);
+        }
+
+        // Função para editar chamado
+        function editarChamado(id) {
+            const chamado = todosChamados.find(c => c.id === id);
+            if (!chamado) return;
+            
+            // Preencher formulário
+            document.getElementById('edit-id').value = chamado.id;
+            document.getElementById('edit-numero').value = chamado.numero;
+            document.getElementById('edit-responsavel').value = chamado.responsavel;
+            document.getElementById('edit-empresa').value = chamado.empresa;
+            document.getElementById('edit-descricao').value = chamado.descricao;
+            document.getElementById('edit-data-inclusao').value = chamado.data_inclusao;
+            document.getElementById('edit-data-agendamento').value = chamado.data_agendamento;
+            
+            if (chamado.estado === 'aberto') {
+                document.getElementById('edit-estado-aberto').checked = true;
+            } else {
+                document.getElementById('edit-estado-fechado').checked = true;
+            }
+            
+            // Abrir modal
+            editModal.show();
+        }
+
+        // Função para salvar edição
+        function salvarEdicao() {
+            const id = document.getElementById('edit-id').value;
+            const numero = document.getElementById('edit-numero').value;
+            const responsavel = document.getElementById('edit-responsavel').value;
+            const empresa = document.getElementById('edit-empresa').value;
+            const descricao = document.getElementById('edit-descricao').value;
+            const dataInclusao = document.getElementById('edit-data-inclusao').value;
+            const dataAgendamento = document.getElementById('edit-data-agendamento').value;
+            const estado = document.querySelector('input[name="edit-estado"]:checked').value;
+            
+            // Validar campos
+            if (!numero || !responsavel || !empresa || !descricao || !dataInclusao || !dataAgendamento) {
+                alert('Todos os campos são obrigatórios');
+                return;
+            }
+            
+            // Preparar dados
+            const chamadoAtualizado = {
+                numero,
+                responsavel,
+                empresa,
+                descricao,
+                data_inclusao: dataInclusao,
+                data_agendamento: dataAgendamento,
+                estado
+            };
+            
+            // Enviar para API
+            fetch(`/chamados/api/chamados/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(chamadoAtualizado)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao atualizar chamado');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Atualizar chamado na lista global
+                todosChamados = todosChamados.map(chamado => 
+                    chamado.id === parseInt(id) ? data : chamado
+                );
+                
+                // Fechar modal
+                editModal.hide();
+                
+                // Recarregar tabela
+                renderizarChamados(todosChamados);
+                
+                // Aplicar filtros atuais
+                filtrarChamados();
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar chamado. Tente novamente.');
+            });
+        }
+
+        // Função para excluir chamado
+        function excluirChamado(id) {
+            if (!confirm('Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+            
+            fetch(`/chamados/api/chamados/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao excluir chamado');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Remover chamado da lista global
+                todosChamados = todosChamados.filter(chamado => chamado.id !== id);
+                
+                // Recarregar tabela
+                renderizarChamados(todosChamados);
+                
+                // Aplicar filtros atuais
+                filtrarChamados();
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao excluir chamado. Tente novamente.');
+            });
+        }
+
+        // Função auxiliar para formatar data
+        function formatarData(dataString) {
+            const data = new Date(dataString);
+            return data.toLocaleDateString('pt-BR');
+        }
+        
+        // Função auxiliar para obter classe de badge baseado no status
+        function getBadgeClass(statusClass) {
+            switch (statusClass) {
+                case 'status-verde':
+                    return 'bg-success';
+                case 'status-amarelo':
+                    return 'bg-warning text-dark';
+                case 'status-vermelho':
+                    return 'bg-danger';
+                case 'status-azul':
+                    return 'bg-primary';
+                default:
+                    return 'bg-secondary';
+            }
+        }
+    </script>
+</body>
+</html>

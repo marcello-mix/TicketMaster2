@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Chamados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .feature-card {
+            height: 100%;
+            transition: transform 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .hero-section {
+            background-color: #f8f9fa;
+            padding: 60px 0;
+            margin-bottom: 30px;
+        }
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 18px;
+        }
+        .icon-box {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Gestor de Chamados</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('index') }}">Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chamados.registro') }}">Registrar Chamado</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chamados.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chamados.gerenciar') }}">Gerenciar Chamados</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 mb-4">Sistema de Gestão de Chamados</h1>
+            <p class="lead mb-5">Gerencie seus chamados de forma eficiente com visualização por status e acompanhamento simplificado.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{{ url_for('chamados.registro') }}" class="btn btn-primary btn-lg px-4 me-md-2">Registrar Chamado</a>
+                <a href="{{ url_for('chamados.dashboard') }}" class="btn btn-outline-primary btn-lg px-4">Ver Dashboard</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="container mb-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="icon-box">
+                            <i class="bi bi-plus-circle"></i>
+                        </div>
+                        <h3 class="card-title">Registro de Chamados</h3>
+                        <p class="card-text">Registre chamados com informações completas, incluindo responsável, empresa, descrição e datas.</p>
+                        <a href="{{ url_for('chamados.registro') }}" class="btn btn-primary">Registrar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="icon-box">
+                            <i class="bi bi-grid"></i>
+                        </div>
+                        <h3 class="card-title">Dashboard Visual</h3>
+                        <p class="card-text">Visualize chamados em cards coloridos por status: verde (a vencer), amarelo (vence hoje), vermelho (atrasado) e azul (resolvido).</p>
+                        <a href="{{ url_for('chamados.dashboard') }}" class="btn btn-primary">Ver Dashboard</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="icon-box">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h3 class="card-title">Gerenciamento</h3>
+                        <p class="card-text">Edite, exclua e filtre chamados facilmente através de uma interface intuitiva e responsiva.</p>
+                        <a href="{{ url_for('chamados.gerenciar') }}" class="btn btn-primary">Gerenciar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
